@@ -4,22 +4,24 @@ import sys
 import ctypes
 import numpy as np
 
-garfield_install = os.getenv("GARFIELD_INSTALL")
-
-print(f"Garfield Install: {garfield_install}")
-
-ROOT.gSystem.Load(garfield_install + "/lib/libmagboltz.so")
-ROOT.gSystem.Load(garfield_install + "/lib/libGarfield.so")
-
-print("Garfield Initialized!")
+try:
+    ROOT.Garfield
+except AttributeError as e:
+    garfield_install = os.getenv("GARFIELD_INSTALL")
+    print(f"Garfield Install: {garfield_install}")
+    ROOT.gSystem.Load(garfield_install + "/lib/libmagboltz.so")
+    ROOT.gSystem.Load(garfield_install + "/lib/libGarfield.so")
+    print("Garfield Initialized!")
 
 
 class Gas:
-    def __init__(self):
-        self.gas = gas = ROOT.Garfield.MediumMagboltz()
-
     def load_gas_file(self, gas_filename: str):
         self.gas.LoadGasFile(gas_filename)
+
+    def __init__(self, gas_file: str = None):
+        self.gas = ROOT.Garfield.MediumMagboltz()
+        if gas_file:
+            self.load_gas_file(gas_file)
 
     def print_gas(self):
         self.gas.PrintGas()
@@ -71,41 +73,31 @@ class Gas:
                                   ctypes.c_double(), ctypes.c_double(), vz  # Drift velocity in cm/us (we only need vz)
                                   )
 
-        if (self.pressure != starting_pressure): self.pressure = starting_pressure
-        if (self.temperature != starting_temperature): self.temperature = starting_temperature
+        if self.pressure != starting_pressure: self.pressure = starting_pressure
+        if self.temperature != starting_temperature: self.temperature = starting_temperature
 
         return vz.value
 
     def get_drift_velocity_electric_field(self, electric_field: np.array, pressure: float = None,
                                           temperature: float = None) -> np.array:
         velocity = np.zeros(len(electric_field))
-        print(len(velocity))
         for i in range(len(velocity)):
             velocity[i] = self.__get_drift_velocity(electric_field=electric_field[i], pressure=pressure,
                                                     temperature=temperature)
-            print(velocity[i])
         return velocity
 
     def get_drift_velocity_pressure(self, electric_field: float, pressure: np.array,
                                     temperature: float = None) -> np.array:
         velocity = np.zeros(len(pressure))
-        print(len(velocity))
         for i in range(len(velocity)):
             velocity[i] = self.__get_drift_velocity(electric_field=electric_field, pressure=pressure[i],
                                                     temperature=temperature)
-            print(velocity[i])
         return velocity
 
-    def get_drift_velocity_temperature(self, electric_field: float, pressure: float = None,
-                                       temperature: np.array) -> np.array:
+    def get_drift_velocity_temperature(self, electric_field: float, temperature: np.array,
+                                       pressure: float = None) -> np.array:
         velocity = np.zeros(len(temperature))
-        print(len(velocity))
         for i in range(len(velocity)):
             velocity[i] = self.__get_drift_velocity(electric_field=electric_field, pressure=pressure,
                                                     temperature=temperature[i])
-            print(velocity[i])
         return velocity
-
-
-if name == "__main__":
-    pass
